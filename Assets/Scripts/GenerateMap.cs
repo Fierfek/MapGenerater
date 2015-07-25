@@ -5,13 +5,23 @@ using System.Collections.Generic;
 
 public class GenerateMap : MonoBehaviour {
 
-	public Text mapWidth, mapHeight;
+	public Text mapWidth, mapHeight, seeds;
 	public float tileSize;
-	int width = 1, height = 1;
+	int width = 1, height = 1, isles;
 	GameObject[] tiles;
 	GameObject tile;
 	List<GameObject> currentSet = new List<GameObject>();
 	int[,] array;
+
+	struct Point {
+		public int x, y;
+		public Point(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+	}
+
+	Point[] seed;
 
 	// Use this for initialization
 	void Start () {
@@ -34,43 +44,31 @@ public class GenerateMap : MonoBehaviour {
 			height = int.Parse (mapHeight.text);
 		}
 
+		isles = int.Parse (seeds.text);
+
 		array = new int[width, height];
 
+		seed = new Point[isles];
+
+		for(int i = 0; i < int.Parse(seeds.text); i ++) {
+			seed[i] = new Point(Random.Range(0, width - 1), Random.Range(0, height - 1));
+			array[seed[i].x, seed[i].y] = Random.Range(0, 2);
+		}
+
+		float dist = int.MaxValue, least = int.MaxValue;
+		int type = 0;
 		for (int i = 0; i < width; i++) {
 			for(int j = 0; j < height; j++) {
-				array[i,j] = 1;
-			}
-		}
-
-		for(int islands = 0; islands < 8; islands ++) {
-			array[Random.Range(2, width - 2), Random.Range(2, height - 2)] = 0;
-		}
-
-		/*for (int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
-				if(Random.value > .5)
-					array[i,j] = 1;
-				else
-					array[i,j] = 0;
-
-				if(i <= 1 || j<= 1 || i >= width - 2 || j >= height -2) {
-					array[i, j] = 1;
+				least = int.MaxValue;
+				dist = int.MaxValue;
+				for(int k = 0; k < isles; k++) {
+					dist = Mathf.Abs(i - seed[k].x) + Mathf.Abs(j - seed[k].y);
+					if(least > dist) {
+						least = dist;
+						type = array[seed[k].x, seed[k].y];
+					}
 				}
-			}
-		}*/
-
-		for (int i = 2; i < width - 2; i++) {
-			for(int j = 2; j < height - 2; j++) {
-				if(array[i,j] == 0) {
-					array[i - 1,j - 1] = 2;
-					array[i - 1,j] = 2;
-					array[i - 1,j + 1] = 2;
-					array[i,j - 1] = 2;
-					array[i,j + 1] = 2;
-					array[i + 1,j - 1] = 2;
-					array[i + 1,j] = 2;
-					array[i + 1,j + 1] = 2;
-				}
+				array[i, j] = type;
 			}
 		}
 
