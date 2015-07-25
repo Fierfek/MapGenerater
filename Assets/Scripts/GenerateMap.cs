@@ -7,6 +7,7 @@ public class GenerateMap : MonoBehaviour {
 
 	public Text mapWidth, mapHeight, seeds;
 	public float tileSize;
+	public Toggle toggle;
 	int width = 1, height = 1, isles;
 	GameObject[] tiles;
 	GameObject tile;
@@ -50,7 +51,7 @@ public class GenerateMap : MonoBehaviour {
 
 		seed = new Point[isles];
 
-		for(int i = 0; i < int.Parse(seeds.text); i ++) {
+		for(int i = 0; i < isles; i ++) {
 			seed[i] = new Point(Random.Range(0, width - 1), Random.Range(0, height - 1));
 			array[seed[i].x, seed[i].y] = Random.Range(0, 2);
 		}
@@ -72,10 +73,20 @@ public class GenerateMap : MonoBehaviour {
 			}
 		}
 
+		if (toggle.isOn) {
+			DisplaySeeds();
+		}
+
 		for (int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
-				currentSet.Add(Instantiate(tiles[array[i,j]], new Vector3(i * tileSize, j * tileSize, 0), Quaternion.identity) as GameObject);
+			for (int j = 0; j < height; j++) {
+				currentSet.Add (Instantiate (tiles [array [i, j]], new Vector3 (i * tileSize, j * tileSize, 0), Quaternion.identity) as GameObject);
 			}
+		}
+	}
+
+	public void DisplaySeeds() {
+		for(int i = 0; i < isles; i ++) {
+			array[seed[i].x, seed[i].y] = 3;
 		}
 	}
 }
