@@ -11,6 +11,7 @@ public class GenerateMap : MonoBehaviour {
 	GameObject[] tiles;
 	GameObject tile;
 	List<GameObject> currentSet = new List<GameObject>();
+	int[,] array;
 
 	// Use this for initialization
 	void Start () {
@@ -33,14 +34,49 @@ public class GenerateMap : MonoBehaviour {
 			height = int.Parse (mapHeight.text);
 		}
 
+		array = new int[width, height];
+
 		for (int i = 0; i < width; i++) {
 			for(int j = 0; j < height; j++) {
-				if(i == 0 || j== 0 || i == width - 1 || j == height -1) {
-					tile = tiles[1];
-				} else {
-					tile = tiles[0];
+				array[i,j] = 1;
+			}
+		}
+
+		for(int islands = 0; islands < 8; islands ++) {
+			array[Random.Range(2, width - 2), Random.Range(2, height - 2)] = 0;
+		}
+
+		/*for (int i = 0; i < width; i++) {
+			for(int j = 0; j < height; j++) {
+				if(Random.value > .5)
+					array[i,j] = 1;
+				else
+					array[i,j] = 0;
+
+				if(i <= 1 || j<= 1 || i >= width - 2 || j >= height -2) {
+					array[i, j] = 1;
 				}
-				currentSet.Add(Instantiate(tile	, new Vector3(i * tileSize, j * tileSize, 0), Quaternion.identity) as GameObject);
+			}
+		}*/
+
+		for (int i = 2; i < width - 2; i++) {
+			for(int j = 2; j < height - 2; j++) {
+				if(array[i,j] == 0) {
+					array[i - 1,j - 1] = 2;
+					array[i - 1,j] = 2;
+					array[i - 1,j + 1] = 2;
+					array[i,j - 1] = 2;
+					array[i,j + 1] = 2;
+					array[i + 1,j - 1] = 2;
+					array[i + 1,j] = 2;
+					array[i + 1,j + 1] = 2;
+				}
+			}
+		}
+
+		for (int i = 0; i < width; i++) {
+			for(int j = 0; j < height; j++) {
+				currentSet.Add(Instantiate(tiles[array[i,j]], new Vector3(i * tileSize, j * tileSize, 0), Quaternion.identity) as GameObject);
 			}
 		}
 	}
