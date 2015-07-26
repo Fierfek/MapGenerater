@@ -6,8 +6,9 @@ using System.Collections.Generic;
 public class GenerateMap : MonoBehaviour {
 
 	public Text mapWidth, mapHeight, seeds;
-	public float tileSize;
 	public Toggle toggle;
+	bool euclidean, showSeeds;
+	float tileSize;
 	int width = 1, height = 1, isles;
 	GameObject[] tiles;
 	GameObject tile;
@@ -63,7 +64,11 @@ public class GenerateMap : MonoBehaviour {
 				least = int.MaxValue;
 				dist = int.MaxValue;
 				for(int k = 0; k < isles; k++) {
-					dist = Mathf.Abs(i - seed[k].x) + Mathf.Abs(j - seed[k].y);
+					if(euclidean)
+						dist = Mathf.Sqrt(Mathf.Pow(i - seed[k].x, 2) + Mathf.Pow(j - seed[k].y, 2));
+					else
+						dist = Mathf.Abs(i - seed[k].x) + Mathf.Abs(j - seed[k].y);
+					
 					if(least > dist) {
 						least = dist;
 						type = array[seed[k].x, seed[k].y];
@@ -87,6 +92,14 @@ public class GenerateMap : MonoBehaviour {
 	public void DisplaySeeds() {
 		for(int i = 0; i < isles; i ++) {
 			array[seed[i].x, seed[i].y] = 3;
+		}
+	}
+
+	public void euclideanToggle() {
+		if (euclidean = true) {
+			euclidean = false;
+		} else {
+			euclidean = true;
 		}
 	}
 }
