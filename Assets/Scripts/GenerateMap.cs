@@ -60,7 +60,10 @@ public class GenerateMap : MonoBehaviour {
 		seeds = new Seed[isles * circleMod];
 
 		for (int i = 0; i < isles; i ++) {
-			seeds [i] = new Seed (Random.Range (0, width - 1), Random.Range (0, height - 1), Random.Range (0, tiles.Length - 2));
+			if(Random.Range(0, 100) < 60)
+				seeds [i] = new Seed (Random.Range (0, width - 1), Random.Range (0, height - 1), 0);
+			else
+				seeds [i] = new Seed (Random.Range (0, width - 1), Random.Range (0, height - 1), 1);
 		}
 
 		if (circular.isOn) {
@@ -94,6 +97,7 @@ public class GenerateMap : MonoBehaviour {
 						type = seeds[k].type;
 					}
 				}
+
 				array[i, j] = type;
 			}
 		}
@@ -172,19 +176,51 @@ public class GenerateMap : MonoBehaviour {
 	}
 
 	public void biomes() {
-		int choice;
 		for (int i = 0; i < isles; i ++) {
 			if(seeds[i].type == 0) {
-				choice = Random.Range(0, 6);
-
-				if(choice == 0) {
-					river(seeds[i].x, seeds[i].y);
+				if(Random.Range(0, 101) <= 20) {
+					river(seeds[i].x, seeds[i].y, false);
+				}
+				if(Random.Range(0, 101) <= 30) {
+					convertBiome(seeds[i], 3);
+					continue;
+				}
+				if(Random.Range(0, 101) <= 30) {
+					convertBiome(seeds[i], 4);
+					continue;
 				}
 			}
 		}
 	}
 
-	public void river(int x, int y) {
+	private void convertBiome(Seed s, int type) {
+		float dist = int.MaxValue, dist2 = int.MaxValue;
+		bool closest = true;
+		for (int i = 0; i < width; i++) {
+			for(int j = 0; j < height; j++) {
+				if(array[i,j] != 2 && array[i,j] != 1) {
+					dist2 = Mathf.Sqrt(Mathf.Pow(i - s.x, 2) + Mathf.Pow(j - s.y, 2));
+					
+					for(int k = 0; k < isles * circleMod; k++) {
+						if(!s.Equals(seeds[k]))
+							dist = Mathf.Sqrt(Mathf.Pow(i - seeds[k].x, 2) + Mathf.Pow(j - seeds[k].y, 2));
+
+						if(dist2 > dist) {
+							closest = false;
+							break;
+						}
+					}
+
+					if(closest && Random.Range (0, 101) <= 80) {
+						array[i, j] = type;
+					}
+					closest = true;
+				}
+			}
+		}
+	}
+
+	public void river(int x, int y, bool fork) {
 
 		float dist = int.MaxValue, least = int.MaxValue;
 		Seed seed = new Seed(), currentPoint;
@@ -205,12 +241,20 @@ public class GenerateMap : MonoBehaviour {
 		}
 		least = int.MaxValue;
 
-		if (Random.Range (0, 101) <= 5) {
+		if (Random.Range (0, 101) <= 5 && !fork) {
 			longest = true;
 		}
 
 
 		while (more) {
+
+			if (Random.Range (0, 101) <= 5) {
+				if(longest)
+					river (x, y, false);
+				else
+					river (x, y, true);
+			}
+
 			if(!longest) {
 				dist = Mathf.Sqrt (Mathf.Pow (x + 1 - seed.x, 2) + Mathf.Pow (y - seed.y, 2));
 				if(least > dist) {
