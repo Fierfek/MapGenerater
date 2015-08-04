@@ -16,7 +16,11 @@ public class CameraControl : MonoBehaviour {
 		y = Input.GetAxisRaw ("Vertical");
 		scroll = Input.GetAxisRaw ("Mouse ScrollWheel") * 10;
 
-		cam.transform.position = new Vector3 (cam.transform.position.x + x, cam.transform.position.y + y, cam.transform.position.z);
+		speed = (maxZoom - minZoom) / (Mathf.Clamp(cam.orthographicSize - scroll, minZoom, maxZoom) - minZoom);
+		speed = 1/speed;
+		speed = Mathf.Clamp (speed, .2f, 1.0f);
+
 		cam.orthographicSize = Mathf.Clamp (cam.orthographicSize - scroll, minZoom, maxZoom);
+		cam.transform.position = new Vector3 (cam.transform.position.x + (x * speed), cam.transform.position.y + (y * speed), cam.transform.position.z);
 	}
 }
