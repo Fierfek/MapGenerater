@@ -39,6 +39,22 @@ public class GenerateMap : MonoBehaviour {
 		}
 	}
 
+	public void SaveMap() {
+		System.DateTime s = System.DateTime.Now;
+		string data = "", path = Application.dataPath + "/Saves/" + s.Year + "" + s.Month + "" + s.Day + "." + s.Hour + "" + s.Minute + "" + s.Second + ".txt";
+
+		for (int i = 0; i < width; i++) {
+			for(int j = 0; j < height; j++) {
+				data += array[i,j].ToString();
+			}
+		}
+
+
+
+		System.IO.File.Create(path).Close();
+		System.IO.File.WriteAllText (path, data);
+	}
+
 	public void Generate() {
 		foreach(GameObject thing in currentSet) {
 			Destroy(thing);
