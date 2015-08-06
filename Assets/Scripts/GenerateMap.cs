@@ -6,13 +6,12 @@ using System.Collections.Generic;
 public class GenerateMap : MonoBehaviour {
 
 	public Text mapWidth, mapHeight, numSeeds;
-	public Toggle toggle, circular;
+	public Toggle circular;
 	bool euclidean, showSeeds;
 	float tileSize;
 	int width = 1, height = 1, isles, circleMod = 1;
-	GameObject[] tiles;
-	GameObject tile;
-	List<GameObject> currentSet = new List<GameObject>();
+	Sprite[] sprites;
+	GameObject[,] currentSet;
 	int[,] array;
 
 	struct Seed {
@@ -28,8 +27,8 @@ public class GenerateMap : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		tiles = Resources.LoadAll<GameObject>("tiles");
-		tileSize = tiles[0].GetComponent<Renderer>().bounds.size.x;
+		sprites = Resources.LoadAll<Sprite>("tiles");
+		tileSize = sprites[0].bounds.size.x;
 	}
 	
 	// Update is called once per frame
@@ -37,11 +36,15 @@ public class GenerateMap : MonoBehaviour {
 		if (Input.GetKey (KeyCode.Space)) {
 			Generate ();
 		}
+
+
 	}
 
 	public void SaveMap() {
 		System.DateTime s = System.DateTime.Now;
 		string data = "", path = Application.dataPath + "/Saves/" + s.Year + "" + s.Month + "" + s.Day + "." + s.Hour + "" + s.Minute + "" + s.Second + ".txt";
+
+		data += width.ToString () + "." + height.ToString () + " ";
 
 		for (int i = 0; i < width; i++) {
 			for(int j = 0; j < height; j++) {
@@ -50,23 +53,25 @@ public class GenerateMap : MonoBehaviour {
 		}
 
 
-
 		System.IO.File.Create(path).Close();
 		System.IO.File.WriteAllText (path, data);
 	}
 
 	public void Generate() {
-		foreach(GameObject thing in currentSet) {
-			Destroy(thing);
-		}
-
 		if (mapWidth.text.Length > 0 || mapHeight.text.Length > 0) {
 			width = int.Parse (mapWidth.text);
 			height = int.Parse (mapHeight.text);
 		}
 
-		isles = int.Parse (numSeeds.text);
+		currentSet = new GameObject[width, height];
 		array = new int[width, height];
+		isles = int.Parse (numSeeds.text);
+
+
+		foreach(GameObject thing in currentSet) {
+			if(thing != null)
+				ObjectPool.instance.PoolObject(thing);
+		}
 
 		if (circular.isOn)
 			circleMod = 9;
@@ -118,24 +123,15 @@ public class GenerateMap : MonoBehaviour {
 			}
 		}
 
-		if (toggle.isOn) {
-			DisplaySeeds();
-		}
-
 		beach();
-
 		biomes();
 
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
-				currentSet.Add (Instantiate (tiles [array [i, j]], new Vector3 (i * tileSize, j * tileSize, 0), Quaternion.identity) as GameObject);
+				currentSet[i, j] = ObjectPool.instance.GetObjectForType("Tile", false);
+				currentSet[i, j].transform.position = new Vector3(i * tileSize, j * tileSize, 0);
+				currentSet[i, j].GetComponent<SpriteRenderer>().sprite = sprites[array[i,j]];
 			}
-		}
-	}
-
-	public void DisplaySeeds() {
-		for(int i = 0; i < isles; i ++) {
-			array[seeds[i].x, seeds[i].y] = tiles.Length - 1;
 		}
 	}
 
