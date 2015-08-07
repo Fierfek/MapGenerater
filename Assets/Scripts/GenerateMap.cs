@@ -15,6 +15,7 @@ public class GenerateMap : MonoBehaviour {
 	GameObject[,] currentSet = new GameObject[1,1];
 	int[,] array, visible;
 	List<Seed> points = new List<Seed>();
+	Rect r;
 
 	struct Seed {
 		public int x, y, type;
@@ -44,7 +45,7 @@ public class GenerateMap : MonoBehaviour {
 			points.Clear();
 			for (int i = 0; i < width; i++) {
 				for (int j = 0; j < height; j++) {
-					if (cam.rect.Contains (cam.WorldToViewportPoint (new Vector3 (i * tileSize, j * tileSize, 0)))) {
+					if (cam.rect.Contains (cam.WorldToViewportPoint (new Vector3 (i * tileSize + tileSize/2, j * tileSize + tileSize/2, 0)))) {
 						if(visible[i, j] == 0) {
 							points.Add(new Seed(i, j, 1));
 							visible[i, j] = 1;
