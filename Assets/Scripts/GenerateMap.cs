@@ -7,12 +7,14 @@ public class GenerateMap : MonoBehaviour {
 
 	public Text mapWidth, mapHeight, numSeeds;
 	public Toggle circular;
-	bool euclidean, showSeeds;
+	Camera cam;
+	bool euclidean, showSeeds, doneGenerating = false;
 	float tileSize;
 	int width = 1, height = 1, isles, circleMod = 1;
 	Sprite[] sprites;
-	GameObject[,] currentSet;
-	int[,] array;
+	GameObject[,] currentSet = new GameObject[1,1];
+	int[,] array, visible;
+	List<Seed> points = new List<Seed>();
 
 	struct Seed {
 		public int x, y, type;
@@ -29,15 +31,47 @@ public class GenerateMap : MonoBehaviour {
 	void Start () {
 		sprites = Resources.LoadAll<Sprite>("tiles");
 		tileSize = sprites[0].bounds.size.x;
+		cam = Camera.main;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKey (KeyCode.Space)) {
-			Generate ();
+			Generate();
 		}
 
+		if (doneGenerating) {
+			points.Clear();
+			for (int i = 0; i < width; i++) {
+				for (int j = 0; j < height; j++) {
+					if (cam.rect.Contains (cam.WorldToViewportPoint (new Vector3 (i * tileSize, j * tileSize, 0)))) {
+						if(visible[i, j] == 0) {
+							points.Add(new Seed(i, j, 1));
+							visible[i, j] = 1;
+						}
+					} else {
+						if(visible[i, j] == 1) {
+							points.Add(new Seed(i, j, 0));
+							visible[i, j] = 0;
+						}
+					}
+				}
+			}
 
+			RenderTiles();
+		}
+	}
+
+	public void RenderTiles() {
+		foreach(Seed s in points) {
+			if(s.type == 0) {
+				ObjectPool.instance.PoolObject(currentSet[s.x, s.y]);
+			} else {
+				currentSet [s.x, s.y] = ObjectPool.instance.GetObjectForType ("Tile", false);
+				currentSet [s.x, s.y].transform.position = new Vector3 (s.x * tileSize, s.y * tileSize, 0);
+				currentSet [s.x, s.y].GetComponent<SpriteRenderer>().sprite = sprites[array [s.x, s.y]];
+			}
+		}
 	}
 
 	public void SaveMap() {
@@ -58,6 +92,7 @@ public class GenerateMap : MonoBehaviour {
 	}
 
 	public void Generate() {
+		doneGenerating = false;
 		if (mapWidth.text.Length > 0 || mapHeight.text.Length > 0) {
 			width = int.Parse (mapWidth.text);
 			height = int.Parse (mapHeight.text);
@@ -65,7 +100,9 @@ public class GenerateMap : MonoBehaviour {
 
 		currentSet = new GameObject[width, height];
 		array = new int[width, height];
+		visible = new int[width, height];
 		isles = int.Parse (numSeeds.text);
+		cam.transform.position = new Vector3 (width / 2 * tileSize, height / 2 * tileSize, cam.transform.position.z);
 
 
 		foreach(GameObject thing in currentSet) {
@@ -118,21 +155,16 @@ public class GenerateMap : MonoBehaviour {
 						type = seeds[k].type;
 					}
 				}
+				
 
+				
 				array[i, j] = type;
 			}
 		}
-
+		
 		beach();
 		biomes();
-
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				currentSet[i, j] = ObjectPool.instance.GetObjectForType("Tile", false);
-				currentSet[i, j].transform.position = new Vector3(i * tileSize, j * tileSize, 0);
-				currentSet[i, j].GetComponent<SpriteRenderer>().sprite = sprites[array[i,j]];
-			}
-		}
+		doneGenerating = true;
 	}
 
 	public void euclideanToggle() {
