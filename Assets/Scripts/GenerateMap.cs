@@ -7,6 +7,7 @@ public class GenerateMap : MonoBehaviour {
 
 	public Text mapWidth, mapHeight, numSeeds;
 	public Toggle circular;
+	public static GenerateMap instance;
 	Camera cam;
 	bool euclidean, showSeeds, doneGenerating = false;
 	float tileSize;
@@ -15,7 +16,7 @@ public class GenerateMap : MonoBehaviour {
 	GameObject[,] currentSet = new GameObject[1,1];
 	int[,] array, visible;
 	List<Seed> points = new List<Seed>();
-	Rect r;
+	Seed[] seeds;
 
 	struct Seed {
 		public int x, y, type;
@@ -26,7 +27,9 @@ public class GenerateMap : MonoBehaviour {
 		}
 	}
 
-	Seed[] seeds;
+	void Awake() {
+		instance = this;
+	}
 
 	// Use this for initialization
 	void Start () {
@@ -42,24 +45,8 @@ public class GenerateMap : MonoBehaviour {
 		}
 
 		if (doneGenerating) {
-			points.Clear();
-			for (int i = 0; i < width; i++) {
-				for (int j = 0; j < height; j++) {
-					if (cam.rect.Contains (cam.WorldToViewportPoint (new Vector3 (i * tileSize + tileSize/2, j * tileSize + tileSize/2, 0)))) {
-						if(visible[i, j] == 0) {
-							points.Add(new Seed(i, j, 1));
-							visible[i, j] = 1;
-						}
-					} else {
-						if(visible[i, j] == 1) {
-							points.Add(new Seed(i, j, 0));
-							visible[i, j] = 0;
-						}
-					}
-				}
-			}
-
 			RenderTiles();
+			points.Clear();
 		}
 	}
 
@@ -72,6 +59,33 @@ public class GenerateMap : MonoBehaviour {
 				currentSet [s.x, s.y].transform.position = new Vector3 (s.x * tileSize, s.y * tileSize, 0);
 				currentSet [s.x, s.y].GetComponent<SpriteRenderer>().sprite = sprites[array [s.x, s.y]];
 			}
+		}
+	}
+
+	public void AddPoint(float x, float y) {
+		x = x / tileSize; y = y / tileSize;
+		TestAdjacent ((int)x + 1, (int)y);
+		TestAdjacent ((int)x + 1, (int)y + 1);
+		TestAdjacent ((int)x, (int)y + 1);
+		TestAdjacent ((int)x - 1, (int)y + 1);
+		TestAdjacent ((int)x - 1, (int)y);
+		TestAdjacent ((int)x - 1, (int)y - 1);
+		TestAdjacent ((int)x, (int)y - 1);
+		TestAdjacent ((int)x + 1, (int)y - 1);
+	}
+
+	private void TestAdjacent(int x, int y) {
+		if (visible [x, y] == 0) {
+			points.Add (new Seed (x, y, 1));
+			visible [x, y] = 1;
+		}
+	}
+
+	public void RemovePoint(float x, float y) {
+		x = x / tileSize; y = y / tileSize;
+		if (visible [(int)x, (int)y] == 1) {
+			points.Add (new Seed ((int)x, (int)y, 0));
+			visible [(int)x, (int)y] = 0;
 		}
 	}
 
@@ -93,6 +107,7 @@ public class GenerateMap : MonoBehaviour {
 	}
 
 	public void Generate() {
+
 		doneGenerating = false;
 		if (mapWidth.text.Length > 0 || mapHeight.text.Length > 0) {
 			width = int.Parse (mapWidth.text);
@@ -104,7 +119,6 @@ public class GenerateMap : MonoBehaviour {
 		visible = new int[width, height];
 		isles = int.Parse (numSeeds.text);
 		cam.transform.position = new Vector3 (width / 2 * tileSize, height / 2 * tileSize, cam.transform.position.z);
-
 
 		foreach(GameObject thing in currentSet) {
 			if(thing != null)
@@ -162,9 +176,11 @@ public class GenerateMap : MonoBehaviour {
 				array[i, j] = type;
 			}
 		}
-		
+
 		beach();
 		biomes();
+
+		points.Add(new Seed((int)(width/2 * tileSize),(int) (height/2 * tileSize), 1));
 		doneGenerating = true;
 	}
 
