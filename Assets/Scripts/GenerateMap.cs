@@ -1,22 +1,21 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 
 public class GenerateMap : MonoBehaviour {
 
 	public Text mapWidth, mapHeight, numSeeds;
 	public Toggle circular;
-	public static GenerateMap instance;
 	Camera cam;
-	bool euclidean, showSeeds, doneGenerating = false;
-	float tileSize;
+	bool euclidean, showSeeds;
 	int width = 1, height = 1, isles, circleMod = 1;
-	Sprite[] sprites;
-	GameObject[,] currentSet = new GameObject[1,1];
-	int[,] array, visible;
-	List<Seed> points = new List<Seed>();
+	TileBase[] tiles;
+	int[,] array;
 	Seed[] seeds;
+	public Tilemap map;
+	Vector3Int vect;
 
 	struct Seed {
 		public int x, y, type;
@@ -27,14 +26,10 @@ public class GenerateMap : MonoBehaviour {
 		}
 	}
 
-	void Awake() {
-		instance = this;
-	}
-
 	// Use this for initialization
 	void Start () {
-		sprites = Resources.LoadAll<Sprite>("tiles");
-		tileSize = sprites[0].bounds.size.x;
+		vect = Vector3Int.zero;
+		tiles = Resources.LoadAll<TileBase>("tiles");
 		cam = Camera.main;
 	}
 	
@@ -42,50 +37,6 @@ public class GenerateMap : MonoBehaviour {
 	void Update () {
 		if (Input.GetKey (KeyCode.Space)) {
 			Generate();
-		}
-
-		if (doneGenerating) {
-			RenderTiles();
-			points.Clear();
-		}
-	}
-
-	public void RenderTiles() {
-		foreach(Seed s in points) {
-			if(s.type == 0) {
-				ObjectPool.instance.PoolObject(currentSet[s.x, s.y]);
-			} else {
-				currentSet [s.x, s.y] = ObjectPool.instance.GetObjectForType ("Tile", false);
-				currentSet [s.x, s.y].transform.position = new Vector3 (s.x * tileSize, s.y * tileSize, 0);
-				currentSet [s.x, s.y].GetComponent<SpriteRenderer>().sprite = sprites[array [s.x, s.y]];
-			}
-		}
-	}
-
-	public void AddPoint(float x, float y) {
-		x = x / tileSize; y = y / tileSize;
-		TestAdjacent ((int)x + 1, (int)y);
-		TestAdjacent ((int)x + 1, (int)y + 1);
-		TestAdjacent ((int)x, (int)y + 1);
-		TestAdjacent ((int)x - 1, (int)y + 1);
-		TestAdjacent ((int)x - 1, (int)y);
-		TestAdjacent ((int)x - 1, (int)y - 1);
-		TestAdjacent ((int)x, (int)y - 1);
-		TestAdjacent ((int)x + 1, (int)y - 1);
-	}
-
-	private void TestAdjacent(int x, int y) {
-		if (visible [x, y] == 0) {
-			points.Add (new Seed (x, y, 1));
-			visible [x, y] = 1;
-		}
-	}
-
-	public void RemovePoint(float x, float y) {
-		x = x / tileSize; y = y / tileSize;
-		if (visible [(int)x, (int)y] == 1) {
-			points.Add (new Seed ((int)x, (int)y, 0));
-			visible [(int)x, (int)y] = 0;
 		}
 	}
 
@@ -108,22 +59,15 @@ public class GenerateMap : MonoBehaviour {
 
 	public void Generate() {
 
-		doneGenerating = false;
+		map.ClearAllTiles();
 		if (mapWidth.text.Length > 0 || mapHeight.text.Length > 0) {
 			width = int.Parse (mapWidth.text);
 			height = int.Parse (mapHeight.text);
 		}
 
-		currentSet = new GameObject[width, height];
 		array = new int[width, height];
-		visible = new int[width, height];
 		isles = int.Parse (numSeeds.text);
-		cam.transform.position = new Vector3 (width / 2 * tileSize, height / 2 * tileSize, cam.transform.position.z);
-
-		foreach(GameObject thing in currentSet) {
-			if(thing != null)
-				ObjectPool.instance.PoolObject(thing);
-		}
+		//cam.transform.position = new Vector3 (width / 2 * tileSize, height / 2 * tileSize, cam.transform.position.z);
 
 		if (circular.isOn)
 			circleMod = 9;
@@ -132,11 +76,11 @@ public class GenerateMap : MonoBehaviour {
 
 		seeds = new Seed[isles * circleMod];
 
-		for (int i = 0; i < isles; i ++) {
-			if(Random.Range(0, 100) < 60)
-				seeds [i] = new Seed (Random.Range (0, width - 1), Random.Range (0, height - 1), 0);
+		for (int i = 0; i < isles; i++) {
+			if (Random.Range(0, 100) < 60)
+				seeds[i] = new Seed(Random.Range(0, width - 1), Random.Range(0, height - 1), 0);
 			else
-				seeds [i] = new Seed (Random.Range (0, width - 1), Random.Range (0, height - 1), 1);
+				seeds[i] = new Seed(Random.Range(0, width - 1), Random.Range(0, height - 1), 1);
 		}
 
 		if (circular.isOn) {
@@ -154,11 +98,13 @@ public class GenerateMap : MonoBehaviour {
 
 		float dist = int.MaxValue, least = int.MaxValue;
 		int type = 0;
+		//iterate through array
 		for (int i = 0; i < width; i++) {
 			for(int j = 0; j < height; j++) {
 				least = int.MaxValue;
 				dist = int.MaxValue;
 
+				//finds the closest seed;
 				for(int k = 0; k < isles * circleMod; k++) {
 					if(euclidean)
 						dist = Mathf.Sqrt(Mathf.Pow(i - seeds[k].x, 2) + Mathf.Pow(j - seeds[k].y, 2));
@@ -171,17 +117,24 @@ public class GenerateMap : MonoBehaviour {
 					}
 				}
 				
-
-				
+				//set array type to closest seed type
 				array[i, j] = type;
 			}
 		}
 
-		beach();
 		biomes();
+		beach();
 
-		points.Add(new Seed((int)(width/2 * tileSize),(int) (height/2 * tileSize), 1));
-		doneGenerating = true;
+		setTiles();
+	}
+
+	private void setTiles() {
+		for(int i = 0; i < width; i++) {
+			for(int j = 0; j < height; j++) {
+				vect.Set(i, j, 0);
+				map.SetTile(vect, tiles[array[i, j]]);
+			}
+		}
 	}
 
 	public void euclideanToggle() {

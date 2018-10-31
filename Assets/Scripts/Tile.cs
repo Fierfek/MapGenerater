@@ -13,7 +13,7 @@ public class Tile : MonoBehaviour {
 
 	}
 
-	void OnTriggerEnter2D(Collider2D other) {
+	/*void OnTriggerEnter2D(Collider2D other) {
 		if(other.name == "Main Camera")
 			GenerateMap.instance.AddPoint(gameObject.transform.position.x, gameObject.transform.position.y);
 	}
@@ -21,5 +21,5 @@ public class Tile : MonoBehaviour {
 	void OnTriggerExit2D(Collider2D other) {
 		if(other.name == "Boxy")
 			GenerateMap.instance.RemovePoint(gameObject.transform.position.x, gameObject.transform.position.y);
-	}
+	}*/
 }
